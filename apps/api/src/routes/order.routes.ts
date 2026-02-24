@@ -2,14 +2,19 @@ import { Hono } from 'hono';
 import { roleGuard } from './middleware/role-guard';
 import { tenantScopeMiddleware } from './middleware/tenant-scope';
 import { orderAccessPolicy } from './middleware/order-access';
+import { CatalogService } from '../modules/catalog/services/catalog.service';
 import { UserRole } from '../modules/orders/repos/order.repo';
 import { CreateOrderUseCase } from '../usecases/orders/create-order.usecase';
 
 interface OrderRoutesDependencies {
   createOrderUseCase: CreateOrderUseCase;
+  catalogService: CatalogService;
 }
 
-export const createOrderRoutes = ({ createOrderUseCase }: OrderRoutesDependencies): Hono => {
+export const createOrderRoutes = ({
+  createOrderUseCase,
+  catalogService,
+}: OrderRoutesDependencies): Hono => {
   const orderRoutes = new Hono();
 
   orderRoutes.use('*', tenantScopeMiddleware);
@@ -17,13 +22,15 @@ export const createOrderRoutes = ({ createOrderUseCase }: OrderRoutesDependencie
   orderRoutes.get(
     '/api/v1/catalog/items',
     roleGuard(['CLIENT', 'SALES_AGENT', 'IN_STORE_MANAGER', 'ADMIN']),
-    (c) => {
+    async (c) => {
       const tenantId = (c.get as unknown as (key: string) => unknown)('tenantId') as string;
+      const query = c.req.query('query');
+      const items = await catalogService.listCatalog(tenantId, query);
       return c.json({
-        items: [],
+        items,
         page: 1,
         pageSize: 20,
-        total: 0,
+        total: items.length,
         tenantId,
       });
     },
@@ -34,12 +41,14 @@ export const createOrderRoutes = ({ createOrderUseCase }: OrderRoutesDependencie
     const tenantId = (c.get as unknown as (key: string) => unknown)('tenantId') as string;
     const idempotencyKey = c.req.header('Idempotency-Key') || '';
     const role = (c.get as unknown as (key: string) => unknown)('role') as UserRole;
-    const userId = c.req.header('x-user-id') ?? body.clientUserId;
+    const userIdFromContext = (c.get as unknown as (key: string) => unknown)('userId') as
+      | string
+      | undefined;
 
     const created = await createOrderUseCase.execute({
       tenantId,
       clientUserId: body.clientUserId,
-      createdByUserId: userId,
+      createdByUserId: userIdFromContext ?? body.clientUserId,
       createdByRole: role,
       idempotencyKey,
       lines: body.lines ?? [],
@@ -57,12 +66,14 @@ export const createOrderRoutes = ({ createOrderUseCase }: OrderRoutesDependencie
       const tenantId = (c.get as unknown as (key: string) => unknown)('tenantId') as string;
       const idempotencyKey = c.req.header('Idempotency-Key') || `assisted-${Date.now()}`;
       const role = (c.get as unknown as (key: string) => unknown)('role') as UserRole;
-      const userId = c.req.header('x-user-id') ?? body.createdByUserId;
+      const userIdFromContext = (c.get as unknown as (key: string) => unknown)('userId') as
+        | string
+        | undefined;
 
       const created = await createOrderUseCase.execute({
         tenantId,
         clientUserId: body.clientUserId,
-        createdByUserId: userId,
+        createdByUserId: userIdFromContext ?? body.createdByUserId,
         createdByRole: role,
         idempotencyKey,
         lines: body.lines ?? [],

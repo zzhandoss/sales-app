@@ -31,9 +31,17 @@ export const createOrderStatusRoutes = ({
   orderStatusRoutes.post('/api/v1/orders/:orderId/confirm-fulfillment', roleGuard(['CLIENT']), async (c) => {
     const orderId = c.req.param('orderId');
     const tenantId = (c.get as unknown as (key: string) => unknown)('tenantId') as string;
-    const userId = c.req.header('x-user-id') || 'unknown-user';
+    const userIdFromContext = (c.get as unknown as (key: string) => unknown)('userId') as
+      | string
+      | undefined;
+    const userIdFromHeader = c.req.header('x-user-id');
     const role = (c.get as unknown as (key: string) => unknown)('role') as string;
-    const result = await confirmFulfillmentUseCase.confirm(orderId, tenantId, userId, role);
+    const result = await confirmFulfillmentUseCase.confirm(
+      orderId,
+      tenantId,
+      userIdFromContext ?? userIdFromHeader ?? 'unknown-user',
+      role,
+    );
     return c.json(result);
   });
 
