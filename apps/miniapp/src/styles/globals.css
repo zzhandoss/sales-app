@@ -1,0 +1,30 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --background: oklch(0.14 0.02 260);
+  --foreground: oklch(0.97 0.01 260);
+  --card: oklch(0.18 0.03 260);
+  --card-foreground: oklch(0.97 0.01 260);
+  --popover: oklch(0.2 0.03 260);
+  --popover-foreground: oklch(0.97 0.01 260);
+  --primary: oklch(0.72 0.19 41);
+  --primary-foreground: oklch(0.14 0.02 260);
+  --secondary: oklch(0.27 0.05 260);
+  --secondary-foreground: oklch(0.95 0.01 260);
+  --muted: oklch(0.23 0.03 260);
+  --muted-foreground: oklch(0.74 0.02 260);
+  --accent: oklch(0.73 0.14 153);
+  --accent-foreground: oklch(0.14 0.02 260);
+  --destructive: oklch(0.64 0.22 24);
+  --destructive-foreground: oklch(0.97 0.01 260);
+  --border: oklch(0.29 0.04 260);
+  --input: oklch(0.24 0.03 260);
+  --ring: oklch(0.72 0.19 41);
+  --radius: 0.8rem;
+}
+
+body {
+  @apply bg-[radial-gradient(circle_at_10%_20%,rgba(255,159,67,0.16),transparent_32%),radial-gradient(circle_at_86%_82%,rgba(61,220,151,0.14),transparent_30%),var(--background)] text-[var(--foreground)] min-h-screen;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
