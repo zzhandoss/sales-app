@@ -1,5 +1,6 @@
 import {
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -37,6 +38,12 @@ export const syncStatusEnum = pgEnum('sync_status', [
   'SENT',
   'FAILED',
   'NEEDS_OPERATOR',
+]);
+
+export const statusEventSourceEnum = pgEnum('status_event_source', [
+  'PLATFORM',
+  'ERP',
+  'USER',
 ]);
 
 export const tenantCompanyTable = pgTable('tenant_company', {
@@ -80,6 +87,7 @@ export const ordersTable = pgTable(
     createdByUserId: text('created_by_user_id').notNull(),
     createdByRole: userRoleEnum('created_by_role').notNull(),
     state: orderStateEnum('state').notNull(),
+    externalOrderId: text('external_order_id'),
     totalAmount: numeric('total_amount').notNull(),
     currency: text('currency').notNull(),
     idempotencyKey: text('idempotency_key').notNull(),
@@ -106,9 +114,23 @@ export const syncRecordTable = pgTable('sync_record', {
   direction: syncDirectionEnum('direction').notNull(),
   status: syncStatusEnum('status').notNull(),
   attemptCount: integer('attempt_count').notNull().default(0),
+  payload: jsonb('payload').$type<Record<string, unknown>>().notNull(),
   lastErrorCode: text('last_error_code'),
   nextRetryAt: timestamp('next_retry_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const orderStatusEventTable = pgTable('order_status_event', {
+  eventId: text('event_id').primaryKey(),
+  orderId: text('order_id')
+    .notNull()
+    .references(() => ordersTable.orderId),
+  tenantId: text('tenant_id')
+    .notNull()
+    .references(() => tenantCompanyTable.tenantId),
+  internalState: orderStateEnum('internal_state').notNull(),
+  externalRawStatus: text('external_raw_status'),
+  source: statusEventSourceEnum('source').notNull(),
+  occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+});

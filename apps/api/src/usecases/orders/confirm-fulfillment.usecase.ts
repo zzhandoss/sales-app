@@ -1,23 +1,41 @@
-﻿import { AppError } from '@shared/errors';
+import { AppError } from '@shared/errors';
 import { OrderStatusEventRepo } from '../../modules/orders/repos/order-status-event.repo';
-
-const confirmations = new Map<string, { confirmedAt: string; confirmedByUserId: string }>();
+import { OrderRepo } from '../../modules/orders/repos/order.repo';
 
 export class ConfirmFulfillmentUseCase {
-  constructor(private readonly orderStatusRepo: OrderStatusEventRepo) {}
+  constructor(
+    private readonly orderRepo: OrderRepo,
+    private readonly orderStatusRepo: OrderStatusEventRepo,
+  ) {}
 
-  confirm(orderId: string, userId: string, role: string): { orderId: string; state: string } {
+  async confirm(
+    orderId: string,
+    tenantId: string,
+    userId: string,
+    role: string,
+  ): Promise<{ orderId: string; state: 'FULFILLED' }> {
     if (role !== 'CLIENT') {
       throw new AppError('ONLY_CLIENT_CAN_CONFIRM', 'Only client can confirm fulfillment', 403);
     }
-    confirmations.set(orderId, { confirmedAt: new Date().toISOString(), confirmedByUserId: userId });
-    this.orderStatusRepo.save({
+
+    const order = await this.orderRepo.findById(orderId, tenantId);
+    if (!order) {
+      throw new AppError('ORDER_NOT_FOUND', 'Order not found', 404);
+    }
+
+    if (order.clientUserId !== userId) {
+      throw new AppError('CLIENT_MISMATCH', 'Only order client can confirm fulfillment', 403);
+    }
+
+    await this.orderRepo.updateState(orderId, tenantId, 'FULFILLED');
+    await this.orderStatusRepo.save({
       orderId,
-      tenantId: 'unknown',
+      tenantId,
       internalState: 'FULFILLED',
       source: 'USER',
       occurredAt: new Date().toISOString(),
     });
+
     return { orderId, state: 'FULFILLED' };
   }
 }

@@ -1,33 +1,38 @@
-﻿export type SyncRecordStatus = 'PENDING' | 'SENT' | 'FAILED' | 'NEEDS_OPERATOR';
+export type SyncRecordStatus = 'PENDING' | 'SENT' | 'FAILED' | 'NEEDS_OPERATOR';
+export type SyncDirection = 'OUTBOUND_ORDER' | 'INBOUND_STATUS';
 
 export interface SyncRecord {
   syncRecordId: string;
   orderId: string;
   tenantId: string;
   provider: string;
-  direction: 'OUTBOUND_ORDER' | 'INBOUND_STATUS';
+  direction: SyncDirection;
   status: SyncRecordStatus;
   attemptCount: number;
+  payload: Record<string, unknown>;
+  lastErrorCode?: string;
+  nextRetryAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSyncRecordInput {
+  syncRecordId: string;
+  orderId: string;
+  tenantId: string;
+  provider: string;
+  direction: SyncDirection;
+  payload: Record<string, unknown>;
+  status?: SyncRecordStatus;
+  attemptCount?: number;
   lastErrorCode?: string;
   nextRetryAt?: string;
 }
 
-const records: SyncRecord[] = [];
-
-export class SyncRecordRepo {
-  add(record: SyncRecord): void {
-    records.push(record);
-  }
-
-  findPending(): SyncRecord[] {
-    return records.filter((record) => record.status === 'PENDING' || record.status === 'FAILED');
-  }
-
-  updateStatus(syncRecordId: string, status: SyncRecordStatus): void {
-    const target = records.find((record) => record.syncRecordId === syncRecordId);
-    if (target) {
-      target.status = status;
-      target.attemptCount += 1;
-    }
-  }
+export interface SyncRecordRepo {
+  add(record: CreateSyncRecordInput): Promise<SyncRecord>;
+  findPendingForRetry(now: string): Promise<SyncRecord[]>;
+  markSent(syncRecordId: string): Promise<void>;
+  markFailed(syncRecordId: string, errorCode: string, nextRetryAt: string): Promise<void>;
+  markNeedsOperator(syncRecordId: string, errorCode: string): Promise<void>;
 }

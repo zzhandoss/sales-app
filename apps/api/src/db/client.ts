@@ -3,12 +3,26 @@ import { Pool } from 'pg';
 import { parseEnv } from '@shared/config';
 import * as schema from './schema';
 
-const env = parseEnv(process.env);
+const poolByConnectionString = new Map<string, Pool>();
 
-const pool = new Pool({
-  connectionString: env.DATABASE_URL,
-});
+const resolvePool = (connectionString: string): Pool => {
+  const existing = poolByConnectionString.get(connectionString);
+  if (existing) {
+    return existing;
+  }
 
-export const db = drizzle(pool, { schema });
-export type DB = typeof db;
+  const created = new Pool({ connectionString });
+  poolByConnectionString.set(connectionString, created);
+  return created;
+};
 
+export const createDb = (connectionString: string) => {
+  return drizzle(resolvePool(connectionString), { schema });
+};
+
+export type DB = ReturnType<typeof createDb>;
+
+export const createDbFromEnv = (source: Record<string, string | undefined> = process.env): DB => {
+  const env = parseEnv(source);
+  return createDb(env.DATABASE_URL);
+};

@@ -1,20 +1,36 @@
-﻿export interface OrderStatusEventRecord {
+export type OrderStatusEventSource = 'PLATFORM' | 'ERP' | 'USER';
+
+export type PersistedOrderState =
+  | 'DRAFT'
+  | 'SUBMITTED'
+  | 'SYNC_PENDING'
+  | 'SYNCED'
+  | 'IN_PROGRESS'
+  | 'READY_FOR_PICKUP'
+  | 'FULFILLED'
+  | 'CANCELED'
+  | 'NEEDS_REVIEW';
+
+export interface OrderStatusEventRecord {
+  eventId: string;
   orderId: string;
   tenantId: string;
-  internalState: string;
+  internalState: PersistedOrderState;
   externalRawStatus?: string;
-  source: 'PLATFORM' | 'ERP' | 'USER';
+  source: OrderStatusEventSource;
   occurredAt: string;
 }
 
-const events: OrderStatusEventRecord[] = [];
+export interface SaveOrderStatusEventInput {
+  orderId: string;
+  tenantId: string;
+  internalState: PersistedOrderState;
+  externalRawStatus?: string;
+  source: OrderStatusEventSource;
+  occurredAt: string;
+}
 
-export class OrderStatusEventRepo {
-  save(event: OrderStatusEventRecord): void {
-    events.push(event);
-  }
-
-  listByOrder(orderId: string): OrderStatusEventRecord[] {
-    return events.filter((event) => event.orderId === orderId);
-  }
+export interface OrderStatusEventRepo {
+  save(event: SaveOrderStatusEventInput): Promise<OrderStatusEventRecord>;
+  listByOrder(orderId: string, tenantId: string): Promise<OrderStatusEventRecord[]>;
 }

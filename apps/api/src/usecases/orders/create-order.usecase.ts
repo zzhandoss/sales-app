@@ -1,6 +1,11 @@
-﻿import { AppError } from '@shared/errors';
-import { OrderEntity, CreateOrderInput } from '../../modules/orders/entities/order.entity';
+import { randomUUID } from 'node:crypto';
+import { PushOrderPayload } from '@integration/erp-1c';
+import { AppError } from '@shared/errors';
+import { CreateOrderInput, OrderEntity } from '../../modules/orders/entities/order.entity';
+import { OrderStatusEventRepo } from '../../modules/orders/repos/order-status-event.repo';
+import { OrderRepo } from '../../modules/orders/repos/order.repo';
 import { OrderAuditLogService } from '../../modules/orders/services/order-audit-log.service';
+import { SyncRecordRepo } from '../../modules/sync/repos/sync-record.repo';
 
 export interface CreatedOrder {
   orderId: string;
@@ -12,18 +17,28 @@ export interface CreatedOrder {
   createdByRole: string;
 }
 
-const orderByTenantAndKey = new Map<string, CreatedOrder>();
-
 export class CreateOrderUseCase {
-  constructor(private readonly auditLogService: OrderAuditLogService) {}
+  constructor(
+    private readonly orderRepo: OrderRepo,
+    private readonly orderStatusEventRepo: OrderStatusEventRepo,
+    private readonly syncRecordRepo: SyncRecordRepo,
+    private readonly auditLogService: OrderAuditLogService,
+  ) {}
 
   async execute(input: CreateOrderInput): Promise<CreatedOrder> {
     OrderEntity.validateCreateInput(input);
 
-    const key = `${input.tenantId}:${input.idempotencyKey}`;
-    const existing = orderByTenantAndKey.get(key);
+    const existing = await this.orderRepo.findByTenantAndIdempotency(input.tenantId, input.idempotencyKey);
     if (existing) {
-      return existing;
+      return {
+        orderId: existing.orderId,
+        tenantId: existing.tenantId,
+        state: 'SYNC_PENDING',
+        totalAmount: existing.totalAmount,
+        currency: existing.currency,
+        clientUserId: existing.clientUserId,
+        createdByRole: existing.createdByRole,
+      };
     }
 
     const isAssisted = input.createdByRole === 'SALES_AGENT' || input.createdByRole === 'IN_STORE_MANAGER';
@@ -31,25 +46,55 @@ export class CreateOrderUseCase {
       throw new AppError('TARGET_CLIENT_REQUIRED', 'Assisted order must include target client', 400);
     }
 
-    const allRevalidated = input.lines.every((line) => line.qty > 0 && line.unitPrice >= 0);
-    if (!allRevalidated) {
-      throw new AppError('REVALIDATION_FAILED', 'Price or availability changed before submit', 409);
-    }
-
     const totalAmount = input.lines.reduce((acc, line) => acc + line.qty * line.unitPrice, 0);
-    const created: CreatedOrder = {
-      orderId: `ord_${Date.now()}`,
+    const orderId = randomUUID();
+    const occurredAt = new Date().toISOString();
+
+    const created = await this.orderRepo.create({
+      orderId,
       tenantId: input.tenantId,
+      clientUserId: input.clientUserId,
+      createdByUserId: input.createdByUserId,
+      createdByRole: input.createdByRole,
       state: 'SYNC_PENDING',
       totalAmount,
       currency: 'USD',
-      clientUserId: input.clientUserId,
-      createdByRole: input.createdByRole,
+      idempotencyKey: input.idempotencyKey,
+    });
+
+    await this.orderStatusEventRepo.save({
+      orderId,
+      tenantId: input.tenantId,
+      internalState: 'SYNC_PENDING',
+      source: 'PLATFORM',
+      occurredAt,
+    });
+
+    const outboundPayload: PushOrderPayload = {
+      tenantExternalId: input.tenantId,
+      internalOrderId: orderId,
+      clientExternalId: input.clientUserId,
+      submittedAt: occurredAt,
+      currency: 'USD',
+      lines: input.lines.map((line) => ({
+        productExternalId: line.productId,
+        qty: line.qty,
+        unitPrice: line.unitPrice,
+      })),
     };
 
-    orderByTenantAndKey.set(key, created);
+    await this.syncRecordRepo.add({
+      syncRecordId: randomUUID(),
+      orderId,
+      tenantId: input.tenantId,
+      provider: '1c',
+      direction: 'OUTBOUND_ORDER',
+      payload: outboundPayload as unknown as Record<string, unknown>,
+      status: 'PENDING',
+    });
+
     this.auditLogService.log({
-      orderId: created.orderId,
+      orderId,
       tenantId: input.tenantId,
       action: 'ORDER_CREATED',
       actorUserId: input.createdByUserId,
@@ -60,6 +105,14 @@ export class CreateOrderUseCase {
       },
     });
 
-    return created;
+    return {
+      orderId: created.orderId,
+      tenantId: created.tenantId,
+      state: 'SYNC_PENDING',
+      totalAmount: created.totalAmount,
+      currency: created.currency,
+      clientUserId: created.clientUserId,
+      createdByRole: created.createdByRole,
+    };
   }
 }

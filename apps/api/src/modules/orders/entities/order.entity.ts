@@ -1,4 +1,5 @@
-﻿import { AppError } from '@shared/errors';
+import { AppError } from '@shared/errors';
+import { UserRole } from '../repos/order.repo';
 
 export interface OrderLineInput {
   productId: string;
@@ -10,7 +11,7 @@ export interface CreateOrderInput {
   tenantId: string;
   clientUserId: string;
   createdByUserId: string;
-  createdByRole: string;
+  createdByRole: UserRole;
   idempotencyKey: string;
   lines: OrderLineInput[];
 }

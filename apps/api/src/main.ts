@@ -1,20 +1,28 @@
-﻿import { Hono } from 'hono';
+import { Hono } from 'hono';
 import { AppError, isAppError } from '@shared/errors';
 import { createLogger } from '@shared/logging';
 import { securityMiddleware } from './routes/middleware/security';
-import { orderRoutes } from './routes/order.routes';
-import { orderStatusRoutes } from './routes/order-status.routes';
-import { orderCancelRoutes } from './routes/order-cancel.routes';
+import { createOrderRoutes } from './routes/order.routes';
+import { createOrderStatusRoutes } from './routes/order-status.routes';
+import { createOrderCancelRoutes } from './routes/order-cancel.routes';
 import { adminRoutes } from './routes/admin.routes';
 import { orderFeedbackRoutes } from './routes/order-feedback.routes';
+import { createRuntimeDependencies } from './runtime/dependencies';
 
 const app = new Hono();
 const logger = createLogger({ scope: 'api' });
+const dependencies = createRuntimeDependencies();
 
 app.use('*', securityMiddleware);
-app.route('/', orderRoutes);
-app.route('/', orderStatusRoutes);
-app.route('/', orderCancelRoutes);
+app.route('/', createOrderRoutes({ createOrderUseCase: dependencies.createOrderUseCase }));
+app.route(
+  '/',
+  createOrderStatusRoutes({
+    orderStatusEventRepo: dependencies.orderStatusEventRepo,
+    confirmFulfillmentUseCase: dependencies.confirmFulfillmentUseCase,
+  }),
+);
+app.route('/', createOrderCancelRoutes({ cancelOrderUseCase: dependencies.cancelOrderUseCase }));
 app.route('/', adminRoutes);
 app.route('/', orderFeedbackRoutes);
 

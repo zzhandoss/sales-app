@@ -1,5 +1,5 @@
-﻿import { OrderStatusEventRecord } from '../repos/order-status-event.repo';
+import { OrderStatusEventRecord } from '../repos/order-status-event.repo';
 
 export interface OrderLifecyclePort {
-  listTimeline(orderId: string): Promise<OrderStatusEventRecord[]>;
+  listTimeline(orderId: string, tenantId: string): Promise<OrderStatusEventRecord[]>;
 }
