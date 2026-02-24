@@ -71,6 +71,16 @@ export class ApiClient {
     return (await response.json()) as CatalogResponse;
   }
 
+  async listOrders(tenantId: string, token: string): Promise<unknown> {
+    const response = await fetch('/api/v1/orders', {
+      headers: this.authHeaders(tenantId, token),
+    });
+    if (!response.ok) {
+      throw await toError(response);
+    }
+    return response.json() as Promise<unknown>;
+  }
+
   async createSelfOrder(input: {
     tenantId: string;
     token: string;
@@ -158,6 +168,27 @@ export class ApiClient {
 
   async listAdminUsers(tenantId: string, token: string): Promise<unknown> {
     const response = await fetch('/api/v1/admin/users/access', {
+      headers: this.authHeaders(tenantId, token),
+    });
+    if (!response.ok) {
+      throw await toError(response);
+    }
+    return response.json() as Promise<unknown>;
+  }
+
+  async listDeadLetters(tenantId: string, token: string): Promise<unknown> {
+    const response = await fetch('/api/v1/admin/sync/dead-letter', {
+      headers: this.authHeaders(tenantId, token),
+    });
+    if (!response.ok) {
+      throw await toError(response);
+    }
+    return response.json() as Promise<unknown>;
+  }
+
+  async retryDeadLetter(tenantId: string, token: string, syncRecordId: string): Promise<unknown> {
+    const response = await fetch(`/api/v1/admin/sync/dead-letter/${syncRecordId}/retry`, {
+      method: 'POST',
       headers: this.authHeaders(tenantId, token),
     });
     if (!response.ok) {

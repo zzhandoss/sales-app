@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { AppError } from '@shared/errors';
 import { DB } from '../../db/client';
 import { ordersTable } from '../../db/schema';
@@ -44,6 +44,22 @@ export class DrizzleOrderRepo implements OrderRepo {
       where: (table, { and, eq }) => and(eq(table.orderId, orderId), eq(table.tenantId, tenantId)),
     });
     return row ? toOrderRecord(row) : undefined;
+  }
+
+  async listForActor(tenantId: string, actorUserId: string, role: OrderRecord['createdByRole']): Promise<OrderRecord[]> {
+    const rows = await this.db
+      .select()
+      .from(ordersTable)
+      .where(
+        role === 'ADMIN'
+          ? eq(ordersTable.tenantId, tenantId)
+          : role === 'CLIENT'
+            ? and(eq(ordersTable.tenantId, tenantId), eq(ordersTable.clientUserId, actorUserId))
+            : and(eq(ordersTable.tenantId, tenantId), eq(ordersTable.createdByUserId, actorUserId)),
+      )
+      .orderBy(desc(ordersTable.createdAt));
+
+    return rows.map(toOrderRecord);
   }
 
   async create(input: CreateOrderRecordInput): Promise<OrderRecord> {

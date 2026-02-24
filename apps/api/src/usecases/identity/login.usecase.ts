@@ -20,8 +20,8 @@ export class LoginUseCase {
     private readonly accessTokenService: AccessTokenService,
   ) {}
 
-  execute(input: LoginInput): LoginResult {
-    const user = this.identityDirectoryService.authenticate(input.tenantId, input.userId, input.password);
+  async execute(input: LoginInput): Promise<LoginResult> {
+    const user = await this.identityDirectoryService.authenticate(input.tenantId, input.userId, input.password);
     const token = this.accessTokenService.issueToken({
       userId: user.userId,
       tenantId: user.tenantId,

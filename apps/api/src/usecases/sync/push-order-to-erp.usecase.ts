@@ -8,6 +8,7 @@ export class PushOrderToErpUseCase {
   constructor(
     private readonly orderRepo: OrderRepo,
     private readonly syncRecordRepo: SyncRecordRepo,
+    private readonly maxRetryAttempts: number = 3,
   ) {}
 
   async execute(syncRecord: SyncRecord): Promise<{ externalOrderId: string }> {
@@ -16,8 +17,12 @@ export class PushOrderToErpUseCase {
     const result = await adapter.pushOrder(payload);
 
     if (result.retriable) {
-      const nextRetryAt = new Date(Date.now() + 60_000).toISOString();
-      await this.syncRecordRepo.markFailed(syncRecord.syncRecordId, 'RETRYABLE_PUSH_FAILURE', nextRetryAt);
+      if (syncRecord.attemptCount + 1 >= this.maxRetryAttempts) {
+        await this.syncRecordRepo.markNeedsOperator(syncRecord.syncRecordId, 'MAX_RETRY_ATTEMPTS_EXCEEDED');
+      } else {
+        const nextRetryAt = new Date(Date.now() + 60_000).toISOString();
+        await this.syncRecordRepo.markFailed(syncRecord.syncRecordId, 'RETRYABLE_PUSH_FAILURE', nextRetryAt);
+      }
       return { externalOrderId: result.externalOrderId };
     }
 

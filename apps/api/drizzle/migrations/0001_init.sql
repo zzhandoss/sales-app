@@ -19,6 +19,8 @@ CREATE TABLE user_account (
   tenant_id TEXT NOT NULL REFERENCES tenant_company(tenant_id),
   role user_role NOT NULL,
   telegram_user_id TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
   status TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

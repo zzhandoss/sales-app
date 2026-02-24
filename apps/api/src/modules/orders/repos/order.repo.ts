@@ -32,6 +32,7 @@ export interface CreateOrderRecordInput {
 export interface OrderRepo {
   findByTenantAndIdempotency(tenantId: string, idempotencyKey: string): Promise<OrderRecord | undefined>;
   findById(orderId: string, tenantId: string): Promise<OrderRecord | undefined>;
+  listForActor(tenantId: string, actorUserId: string, role: UserRole): Promise<OrderRecord[]>;
   create(input: CreateOrderRecordInput): Promise<OrderRecord>;
   updateState(orderId: string, tenantId: string, state: PersistedOrderState): Promise<OrderRecord>;
   attachExternalOrderId(orderId: string, tenantId: string, externalOrderId: string): Promise<void>;

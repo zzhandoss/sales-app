@@ -24,25 +24,44 @@ app.route(
   createAuthRoutes({
     loginUseCase: dependencies.loginUseCase,
     identityDirectoryService: dependencies.identityDirectoryService,
+    permissionGuard: dependencies.permissionGuard,
   }),
 );
-app.route('/', createOrderRoutes({ createOrderUseCase: dependencies.createOrderUseCase, catalogService: dependencies.catalogService }));
+app.route(
+  '/',
+  createOrderRoutes({
+    createOrderUseCase: dependencies.createOrderUseCase,
+    listOrdersUseCase: dependencies.listOrdersUseCase,
+    catalogService: dependencies.catalogService,
+    permissionGuard: dependencies.permissionGuard,
+  }),
+);
 app.route(
   '/',
   createOrderStatusRoutes({
     orderStatusEventRepo: dependencies.orderStatusEventRepo,
     confirmFulfillmentUseCase: dependencies.confirmFulfillmentUseCase,
+    permissionGuard: dependencies.permissionGuard,
   }),
 );
-app.route('/', createOrderCancelRoutes({ cancelOrderUseCase: dependencies.cancelOrderUseCase }));
+app.route(
+  '/',
+  createOrderCancelRoutes({
+    cancelOrderUseCase: dependencies.cancelOrderUseCase,
+    permissionGuard: dependencies.permissionGuard,
+  }),
+);
 app.route(
   '/',
   createAdminRoutes({
     identityDirectoryService: dependencies.identityDirectoryService,
     adminAccessService: dependencies.adminAccessService,
+    listDeadLetterUseCase: dependencies.listDeadLetterUseCase,
+    retryDeadLetterUseCase: dependencies.retryDeadLetterUseCase,
+    permissionGuard: dependencies.permissionGuard,
   }),
 );
-app.route('/', createOrderFeedbackRoutes());
+app.route('/', createOrderFeedbackRoutes({ permissionGuard: dependencies.permissionGuard }));
 app.route('/', createWebRoutes());
 
 app.get('/health', (c) => {

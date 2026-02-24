@@ -64,6 +64,8 @@ export const userAccountTable = pgTable(
       .references(() => tenantCompanyTable.tenantId),
     role: userRoleEnum('role').notNull(),
     telegramUserId: text('telegram_user_id').notNull(),
+    displayName: text('display_name').notNull(),
+    passwordHash: text('password_hash').notNull(),
     status: text('status').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

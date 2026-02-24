@@ -34,6 +34,25 @@ export class InMemoryOrderRepo implements OrderRepo {
     return record;
   }
 
+  async listForActor(
+    tenantId: string,
+    actorUserId: string,
+    role: OrderRecord['createdByRole'],
+  ): Promise<OrderRecord[]> {
+    return [...this.records.values()].filter((record) => {
+      if (record.tenantId !== tenantId) {
+        return false;
+      }
+      if (role === 'ADMIN') {
+        return true;
+      }
+      if (role === 'CLIENT') {
+        return record.clientUserId === actorUserId;
+      }
+      return record.createdByUserId === actorUserId;
+    });
+  }
+
   async create(input: CreateOrderRecordInput): Promise<OrderRecord> {
     const now = new Date().toISOString();
     const record: OrderRecord = {
@@ -118,6 +137,25 @@ export class InMemorySyncRecordRepo implements SyncRecordRepo {
         return true;
       }
       return new Date(record.nextRetryAt) <= nowDate;
+    });
+  }
+
+  async findNeedsOperator(tenantId: string): Promise<SyncRecord[]> {
+    return [...this.records.values()].filter(
+      (record) => record.tenantId === tenantId && record.status === 'NEEDS_OPERATOR',
+    );
+  }
+
+  async requeue(syncRecordId: string): Promise<void> {
+    const existing = this.records.get(syncRecordId);
+    if (!existing) {
+      return;
+    }
+    this.records.set(syncRecordId, {
+      ...existing,
+      status: 'FAILED',
+      nextRetryAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   }
 

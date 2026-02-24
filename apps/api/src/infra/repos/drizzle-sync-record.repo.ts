@@ -66,6 +66,32 @@ export class DrizzleSyncRecordRepo implements SyncRecordRepo {
     return rows.map(toSyncRecord);
   }
 
+  async findNeedsOperator(tenantId: string): Promise<SyncRecord[]> {
+    const rows = await this.db
+      .select()
+      .from(syncRecordTable)
+      .where(
+        and(
+          eq(syncRecordTable.tenantId, tenantId),
+          eq(syncRecordTable.status, 'NEEDS_OPERATOR'),
+        ),
+      )
+      .orderBy(asc(syncRecordTable.updatedAt));
+
+    return rows.map(toSyncRecord);
+  }
+
+  async requeue(syncRecordId: string): Promise<void> {
+    await this.db
+      .update(syncRecordTable)
+      .set({
+        status: 'FAILED',
+        nextRetryAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(syncRecordTable.syncRecordId, syncRecordId));
+  }
+
   async markSent(syncRecordId: string): Promise<void> {
     await this.db
       .update(syncRecordTable)

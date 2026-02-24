@@ -7,7 +7,7 @@ export interface IdentityUser {
   role: IdentityRole;
   status: IdentityStatus;
   displayName: string;
-  password: string;
+  passwordHash: string;
 }
 
 export interface IdentityPublicUser {

@@ -32,6 +32,8 @@ export interface CreateSyncRecordInput {
 export interface SyncRecordRepo {
   add(record: CreateSyncRecordInput): Promise<SyncRecord>;
   findPendingForRetry(now: string): Promise<SyncRecord[]>;
+  findNeedsOperator(tenantId: string): Promise<SyncRecord[]>;
+  requeue(syncRecordId: string): Promise<void>;
   markSent(syncRecordId: string): Promise<void>;
   markFailed(syncRecordId: string, errorCode: string, nextRetryAt: string): Promise<void>;
   markNeedsOperator(syncRecordId: string, errorCode: string): Promise<void>;

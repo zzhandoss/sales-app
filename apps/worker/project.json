@@ -1,0 +1,32 @@
+{
+  "name": "worker",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/worker/src",
+  "projectType": "application",
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --enable-source-maps apps/worker/src/main.ts"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p apps/worker/tsconfig.json"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p apps/worker/tsconfig.json --noEmit"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run --config apps/worker/vitest.config.ts"
+      }
+    }
+  }
+}
