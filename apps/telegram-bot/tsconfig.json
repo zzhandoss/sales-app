@@ -1,0 +1,7 @@
+﻿{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../dist/apps/telegram-bot"
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}

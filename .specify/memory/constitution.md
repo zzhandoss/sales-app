@@ -1,50 +1,149 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+﻿1. Purpose
 
-## Core Principles
+Этот проект создаётся как долгоживущая, масштабируемая SaaS-платформа, ориентированная на:
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+лёгкую поддержку,
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+читаемость,
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+предсказуемость,
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+масштабирование по командам и функционалу.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+Краткосрочная скорость никогда не важнее долгосрочного качества.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+2. Core Principles
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+Clarity over cleverness
+Код читают чаще, чем пишут.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Explicit over implicit
+Явные зависимости, явные контракты, явные решения.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+Composition over inheritance
 
-## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+Contracts first
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+DX is a feature
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+UX is a product requirement
+
+3. Monorepo & Structure
+
+Проект является монорепой на базе NX
+
+Каждое приложение и библиотека:
+
+имеет чёткую ответственность
+
+минимальный публичный API
+
+Запрещены циклические зависимости
+
+Общие утилиты выносятся осознанно, а не “потому что удобно”
+
+4. Skills & Codex Agents
+
+В .codex/skills лежат обязательные skills
+
+Любой код (backend / frontend) обязан учитывать соответствующие skills
+
+Игнорирование skills считается дефектом реализации
+
+5. Development Process
+
+Каждая задача:
+
+начинается с понимания UX/DX сценариев
+
+приоритизирует наиболее вероятные сценарии
+
+Разработка ведётся через маленькие, проверяемые изменения
+
+Любое нетривиальное решение должно быть объяснимо
+
+6. Testing Policy
+
+Тесты обязательны
+
+Минимум:
+
+unit tests
+
+integration tests (где применимо)
+
+Если тест упал:
+
+❌ нельзя “подгонять” тест
+
+✅ исправляется логика, если тест корректен
+
+Код без тестов считается незавершённым
+
+7. Linting & Style
+
+Lint и stylistic — обязательны
+
+Автоформатирование приветствуется
+
+Стиль кода — консистентный внутри проекта
+
+Любые отключения правил — осознанные и документированные
+
+8. Build, Test, Lint
+
+Любое изменение должно проходить:
+
+lint
+
+test
+
+build
+
+CI не является “страшным судьёй”, он — гарант качества.
+
+9. Dependencies
+
+Не боимся устанавливать зависимости
+
+Всегда предупреждаем, какие зависимости добавлены и зачем
+
+Каждая зависимость должна иметь понятную роль
+
+Избыточные зависимости — технический долг
+
+10. Architecture & Scalability
+
+Архитектура должна:
+
+позволять добавлять новые модули без переписывания старых
+
+поддерживать multi-tenant модель
+
+Границы доменов — священны
+
+Прямой доступ между доменами запрещён без контракта
+
+11. Errors, Logs, Observability
+
+Ошибки — структурированные
+
+Логи — осмысленные
+
+Никаких “console.log в проде”
+
+Ошибка должна помогать понять, что произошло
+
+12. Forbidden Practices
+
+Запрещено:
+
+писать код без тестов
+
+скрытые side-effects
+
+магические значения
+
+неявные глобальные состояния
+
+“временно, потом перепишем” без задачи в backlog

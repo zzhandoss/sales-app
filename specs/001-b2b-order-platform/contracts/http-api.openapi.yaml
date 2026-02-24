@@ -1,0 +1,225 @@
+openapi: 3.0.3
+info:
+  title: B2B Order Platform API
+  version: 0.1.0
+  description: Contract-first API for catalog browsing, order creation, and order lifecycle visibility.
+servers:
+  - url: https://api.example.com
+paths:
+  /api/v1/catalog/items:
+    get:
+      summary: List visible catalog items for current tenant and actor
+      parameters:
+        - in: query
+          name: query
+          schema:
+            type: string
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Catalog items page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogPage'
+  /api/v1/orders:
+    post:
+      summary: Create order with idempotency and submit for ERP synchronization
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            minLength: 8
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '409':
+          description: Price/availability changed; explicit reconfirmation required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessError'
+  /api/v1/orders/{orderId}:
+    get:
+      summary: Get order details and status timeline
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetails'
+        '404':
+          description: Order not found
+  /api/v1/orders/{orderId}/confirm-fulfillment:
+    post:
+      summary: Client confirms fulfillment
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Confirmation accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '409':
+          description: Order cannot be confirmed in current state
+  /api/v1/orders/{orderId}/cancel:
+    post:
+      summary: Cancel submitted order (changes must be recreated as new order)
+      parameters:
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order canceled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+components:
+  schemas:
+    CatalogItem:
+      type: object
+      required: [productId, name, price, currency, availableQty]
+      properties:
+        productId:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+        availableQty:
+          type: number
+    CatalogPage:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItem'
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+    CreateOrderRequest:
+      type: object
+      required: [clientUserId, lines]
+      properties:
+        clientUserId:
+          type: string
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/CreateOrderLine'
+    CreateOrderLine:
+      type: object
+      required: [productId, qty]
+      properties:
+        productId:
+          type: string
+        qty:
+          type: number
+          minimum: 0.001
+    Order:
+      type: object
+      required: [orderId, clientUserId, createdByRole, state, totalAmount, currency, createdAt]
+      properties:
+        orderId:
+          type: string
+        clientUserId:
+          type: string
+        createdByRole:
+          type: string
+          enum: [CLIENT, SALES_AGENT, IN_STORE_MANAGER, ADMIN]
+        state:
+          type: string
+          enum: [DRAFT, SUBMITTED, SYNC_PENDING, SYNCED, IN_PROGRESS, READY_FOR_PICKUP, FULFILLED, CANCELED, NEEDS_REVIEW]
+        totalAmount:
+          type: number
+        currency:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    OrderStatusEvent:
+      type: object
+      required: [state, source, occurredAt]
+      properties:
+        state:
+          type: string
+        source:
+          type: string
+          enum: [PLATFORM, ERP, USER]
+        externalRawStatus:
+          type: string
+          nullable: true
+        occurredAt:
+          type: string
+          format: date-time
+    OrderDetails:
+      allOf:
+        - $ref: '#/components/schemas/Order'
+        - type: object
+          required: [lines, statusEvents]
+          properties:
+            lines:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateOrderLine'
+            statusEvents:
+              type: array
+              items:
+                $ref: '#/components/schemas/OrderStatusEvent'
+    BusinessError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string

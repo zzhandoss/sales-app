@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/errors": ["packages/shared/errors/src/index.ts"],
+      "@shared/logging": ["packages/shared/logging/src/index.ts"],
+      "@shared/config": ["packages/shared/config/src/index.ts"],
+      "@integration/erp-1c": ["packages/integration/erp-1c/src/index.ts"],
+      "@contracts": ["packages/contracts/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "build"]
+}
+

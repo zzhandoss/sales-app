@@ -1,0 +1,30 @@
+{
+  "name": "sales-app",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "lint": "nx run-many -t lint --all",
+    "test": "nx run-many -t test --all",
+    "build": "nx run-many -t build --all",
+    "serve:api": "nx run api:serve",
+    "serve:telegram-bot": "nx run telegram-bot:serve",
+    "serve:miniapp": "nx run miniapp:dev"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "drizzle-kit": "^0.30.4",
+    "eslint": "^9.18.0",
+    "nx": "^20.3.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.40.0",
+    "hono": "^4.6.13",
+    "pg": "^8.13.1",
+    "pino": "^9.5.0",
+    "telegraf": "^4.16.3",
+    "zod": "^3.24.1"
+  }
+}
